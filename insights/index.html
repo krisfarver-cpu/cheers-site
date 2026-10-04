@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>IB Cheers insights</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root { --navy:#0B2347; --deep:#081B38; --ink:#F4F6FA; --muted:#B4C3D8; --red:#DA2128; --blue:#6FB1F0; --line:rgba(255,255,255,.14); }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--navy); color:var(--ink); font:400 16px/1.5 Barlow, "Helvetica Neue", Arial, sans-serif; }
+main { max-width:880px; margin:0 auto; padding:28px 20px 64px; }
+header { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+header img { height:44px; width:auto; }
+h1 { font:800 34px/1.05 "Barlow Condensed", sans-serif; margin:28px 0 6px; letter-spacing:.2px; }
+h2 { font:800 22px/1.2 "Barlow Condensed", sans-serif; margin:40px 0 12px; }
+p { margin:0 0 8px; }
+.muted { color:var(--muted); }
+.lede { font-size:21px; line-height:1.45; max-width:62ch; }
+.lede b { font-weight:700; }
+button, input { font:inherit; }
+.periods { display:flex; gap:6px; }
+.periods button { background:transparent; color:var(--ink); border:1.5px solid var(--line); border-radius:999px; padding:7px 14px; cursor:pointer; }
+.periods button[aria-pressed="true"] { background:var(--ink); color:var(--navy); border-color:var(--ink); font-weight:700; }
+.bars { list-style:none; margin:0; padding:0; display:grid; gap:10px; }
+.bar { display:grid; grid-template-columns:minmax(120px, 34%) 1fr 56px; align-items:center; gap:12px; }
+.bar .track { height:14px; border-radius:7px; background:rgba(255,255,255,.07); overflow:hidden; }
+.bar .fill { height:100%; border-radius:7px; background:var(--blue); }
+.bar.carried .fill { background:var(--red); }
+.bar .n { text-align:right; font-weight:700; font-variant-numeric:tabular-nums; }
+.key { display:flex; gap:18px; font-size:14px; color:var(--muted); margin:-4px 0 12px; }
+.key span::before { content:""; display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:0; }
+.key .k-red::before { background:var(--red); } .key .k-blue::before { background:var(--blue); }
+.cols { display:grid; grid-template-columns:1fr 1fr; gap:0 40px; }
+.week { display:flex; align-items:flex-end; gap:6px; height:140px; border-bottom:1px solid var(--line); }
+.week div { flex:1; background:var(--blue); border-radius:4px 4px 0 0; min-height:2px; }
+.week-labels { display:flex; gap:6px; font-size:12px; color:var(--muted); }
+.week-labels span { flex:1; text-align:center; }
+table { width:100%; border-collapse:collapse; }
+td, th { text-align:left; padding:8px 0; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; }
+th { color:var(--muted); font-weight:600; font-size:14px; }
+td.r, th.r { text-align:right; }
+.empty { color:var(--muted); font-style:italic; }
+form { max-width:380px; margin-top:32px; display:grid; gap:12px; }
+label { display:grid; gap:6px; font-weight:600; color:var(--muted); font-size:14px; }
+input { background:rgba(255,255,255,.07); color:var(--ink); border:1.5px solid var(--line); border-radius:12px; padding:13px 14px; }
+.primary { background:var(--red); color:#fff; border:0; border-radius:999px; padding:14px; font-weight:800; cursor:pointer; }
+.error { color:#FF9EA2; min-height:1.5em; }
+.foot { margin-top:48px; font-size:14px; color:var(--muted); max-width:62ch; }
+a { color:var(--blue); }
+:focus-visible { outline:3px solid var(--blue); outline-offset:2px; }
+@media (max-width:640px) { .cols { grid-template-columns:1fr; } .bar { grid-template-columns:minmax(96px, 40%) 1fr 44px; } h1 { font-size:28px; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="ib-logo.png" alt="Indiana Beverage">
+    <div class="periods" id="periods" hidden>
+      <button data-days="7">7 days</button><button data-days="30" aria-pressed="true">30 days</button><button data-days="90">90 days</button>
+    </div>
+  </header>
+
+  <section id="signin">
+    <h1>IB Cheers insights</h1>
+    <p class="muted">Sign in with your IB Cheers account. Only approved Indiana Beverage accounts can see these numbers.</p>
+    <form id="form">
+      <label>Email <input type="email" id="email" autocomplete="email" required></label>
+      <label>Password <input type="password" id="password" autocomplete="current-password" required></label>
+      <button class="primary" type="submit">Sign in</button>
+      <p class="error" id="signinError" role="alert"></p>
+    </form>
+  </section>
+
+  <section id="report" hidden>
+    <h1 id="title">What people are drinking</h1>
+    <p class="lede" id="lede"></p>
+
+    <h2>Most-tagged brands</h2>
+    <div class="key"><span class="k-red">Carried by Indiana Beverage</span><span class="k-blue">Other brands</span></div>
+    <ul class="bars" id="brands"></ul>
+
+    <div class="cols">
+      <div><h2>Styles</h2><ul class="bars" id="categories"></ul></div>
+      <div><h2>Where</h2><ul class="bars" id="places"></ul></div>
+    </div>
+
+    <h2>Day of the week</h2>
+    <ul class="bars" id="weekdays"></ul>
+
+    <h2>Drinks tagged each week</h2>
+    <div class="week" id="weeks"></div>
+    <div class="week-labels" id="weekLabels"></div>
+
+    <h2>Find it taps</h2>
+    <table><thead><tr><th>Brand</th><th class="r">Taps</th><th class="r">People</th></tr></thead><tbody id="findit"></tbody></table>
+
+    <h2>“New this week” card</h2>
+    <table><thead><tr><th>Card</th><th class="r">Saw it</th><th class="r">Taps</th><th class="r">Tap rate</th></tr></thead><tbody id="features"></tbody></table>
+
+    <p class="foot" id="foot"></p>
+    <p class="foot"><a href="#" id="signout">Sign out</a></p>
+  </section>
+</main>
+
+<script>
+const sb = supabase.createClient('https://zmelzlshzkiylbctlqmx.supabase.co', 'sb_publishable_XDvN6Mpww9m_7I-H0nlYIA_1GUpEUSR');
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => Number(n).toLocaleString();
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+let days = 30;
+
+function bars(el, rows, label, value, carriedKey) {
+  const max = Math.max(1, ...rows.map((r) => r[value]));
+  el.innerHTML = rows.length ? rows.map((r) => `
+    <li class="bar${carriedKey && r[carriedKey] ? ' carried' : ''}">
+      <span>${esc(r[label])}</span>
+      <span class="track"><span class="fill" style="display:block;width:${(r[value] / max) * 100}%"></span></span>
+      <span class="n">${fmt(r[value])}</span>
+    </li>`).join('') : '<li class="empty">Not enough activity yet.</li>';
+}
+
+function render(d) {
+  const t = d.totals || {};
+  const share = t.tagged_drinks ? Math.round((t.carried_drinks / t.tagged_drinks) * 100) : 0;
+  const people = t.people ? ` from <b>${fmt(t.people)} people</b>` : '';
+  $('lede').innerHTML = t.tagged_drinks
+    ? `In the last ${days} days, IB Cheers users tagged <b>${fmt(t.tagged_drinks)} drinks</b>${people}. <b>${share}%</b> were brands Indiana Beverage carries, and people tapped Find it <b>${fmt(t.find_it_clicks)} times</b>.`
+    : `No tagged drinks in the last ${days} days yet. Numbers appear here as people share drinks in IB Cheers.`;
+
+  bars($('brands'), d.brands, 'name', 'drinks', 'carried');
+  bars($('categories'), d.categories, 'name', 'drinks');
+  bars($('places'), d.places, 'name', 'drinks');
+  const names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const byDay = Object.fromEntries((d.weekdays || []).map((w) => [w.dow, w.drinks]));
+  bars($('weekdays'), names.map((n, i) => ({ name: n, drinks: byDay[i] || 0 })), 'name', 'drinks');
+
+  const weeks = d.weeks || [];
+  const wmax = Math.max(1, ...weeks.map((w) => w.drinks));
+  $('weeks').innerHTML = weeks.map((w) => `<div title="${fmt(w.drinks)} drinks" style="height:${(w.drinks / wmax) * 100}%"></div>`).join('') || '';
+  $('weekLabels').innerHTML = weeks.map((w) => `<span>${new Date(w.week + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>`).join('');
+
+  $('findit').innerHTML = (d.find_it || []).map((r) => `<tr><td>${esc(r.brand)}</td><td class="r">${fmt(r.clicks)}</td><td class="r">${fmt(r.people)}</td></tr>`).join('')
+    || '<tr><td colspan="3" class="empty">Not enough activity yet.</td></tr>';
+  $('features').innerHTML = (d.features || []).map((r) => `<tr><td>${esc(r.title)}</td><td class="r">${fmt(r.viewers)}</td><td class="r">${fmt(r.taps)}</td><td class="r">${r.viewers ? Math.round((r.taps / r.viewers) * 100) : 0}%</td></tr>`).join('')
+    || '<tr><td colspan="4" class="empty">Not enough activity yet.</td></tr>';
+
+  $('foot').textContent = `These are totals only, with no names or photos. To protect privacy, any brand, style, place, or card seen by fewer than ${d.min_people} people is left out, so smaller numbers fill in as more people use the app.`;
+}
+
+async function load() {
+  const { data, error } = await sb.rpc('partner_insights', { p: 'indianabev', days });
+  if (error) {
+    $('report').hidden = true; $('signin').hidden = false; $('periods').hidden = true;
+    $('signinError').textContent = /authorized/i.test(error.message)
+      ? 'This account isn’t approved for Indiana Beverage insights. Ask Kris to add it.'
+      : `Couldn’t load the numbers: ${error.message}`;
+    return;
+  }
+  $('signin').hidden = true; $('report').hidden = false; $('periods').hidden = false;
+  render(data);
+}
+
+$('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  $('signinError').textContent = '';
+  const { error } = await sb.auth.signInWithPassword({ email: $('email').value.trim(), password: $('password').value });
+  if (error) { $('signinError').textContent = 'That email and password don’t match an IB Cheers account.'; return; }
+  load();
+});
+$('periods').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  days = Number(b.dataset.days);
+  document.querySelectorAll('#periods button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  load();
+});
+$('signout').addEventListener('click', async (e) => { e.preventDefault(); await sb.auth.signOut(); location.reload(); });
+sb.auth.getSession().then(({ data }) => { if (data.session) load(); });
+</script>
+</body>
+</html>
